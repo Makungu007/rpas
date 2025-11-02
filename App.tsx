@@ -12,11 +12,11 @@ export default function App() {
     <SafeAreaProvider>
       {/* Swap between screens to preview */}
       {/* <LoginScreen /> */}
-      {/* <StudentHomeScreen /> */}
+      <StudentHomeScreen />
       {/* <LecturerHomeScreen /> */}
       {/* <LecturerFeedbackScreen /> */}
       {/* <StudentFeedbackScreen /> */}
-      <ProjectUploadScreen />
+      {/* <ProjectUploadScreen /> */}
     </SafeAreaProvider>
   );
 }

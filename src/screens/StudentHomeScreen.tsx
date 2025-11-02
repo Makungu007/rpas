@@ -5,6 +5,45 @@ import { Picker } from '@react-native-picker/picker';
 
 export default function StudentHomeScreen() {
   const [program, setProgram] = useState<string>('');
+  const [supervisor, setSupervisor] = useState<string>('');
+
+  const supervisorOptions: Record<string, { label: string; value: string }[]> = {
+    bsc_cs: [
+      { label: 'Dr. Chanda', value: 'chanda' },
+      { label: 'Ms. Mwila', value: 'mwila' },
+      { label: 'Prof. Phiri', value: 'phiri' },
+    ],
+    bba_ba: [
+      { label: 'Dr. Zulu', value: 'zulu' },
+      { label: 'Ms. Banda', value: 'banda' },
+    ],
+    beng_ee: [
+      { label: 'Eng. Mumba', value: 'mumba' },
+      { label: 'Dr. Tembo', value: 'tembo' },
+    ],
+    beng_me: [
+      { label: 'Eng. Phiri', value: 'e_phiri' },
+      { label: 'Mr. Lungu', value: 'lungu' },
+    ],
+    bsc_nursing: [
+      { label: 'Sr. Nkhoma', value: 'nkhoma' },
+      { label: 'Dr. Chileshe', value: 'chileshe' },
+    ],
+    ba_psych: [
+      { label: 'Dr. Kapasa', value: 'kapasa' },
+      { label: 'Ms. Nyambe', value: 'nyambe' },
+    ],
+    bed_edu: [
+      { label: 'Mr. Mulenga', value: 'mulenga' },
+      { label: 'Dr. Hamaundu', value: 'hamaundu' },
+    ],
+    ba_econ: [
+      { label: 'Dr. Musonda', value: 'musonda' },
+      { label: 'Prof. Zimba', value: 'zimba' },
+    ],
+  };
+
+  const options = program ? supervisorOptions[program] ?? [] : [];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -21,7 +60,10 @@ export default function StudentHomeScreen() {
           <View style={styles.pickerWrapper}>
             <Picker
               selectedValue={program}
-              onValueChange={setProgram}
+              onValueChange={(val) => {
+                setProgram(val);
+                setSupervisor('');
+              }}
               dropdownIconColor="#E8EEF2"
               style={styles.picker}
             >
@@ -37,7 +79,28 @@ export default function StudentHomeScreen() {
             </Picker>
           </View>
 
-          <View style={[styles.button, !program && styles.buttonDisabled]}>
+          <Text style={[styles.sectionTitle, { marginTop: 12 }]}>Supervisor</Text>
+          {!program ? (
+            <View style={[styles.pickerWrapper, { opacity: 0.6, justifyContent: 'center' }]}>
+              <Text style={styles.placeholderText}>Select a program first</Text>
+            </View>
+          ) : (
+            <View style={styles.pickerWrapper}>
+              <Picker
+                selectedValue={supervisor}
+                onValueChange={setSupervisor}
+                dropdownIconColor="#E8EEF2"
+                style={styles.picker}
+              >
+                <Picker.Item label="Select a supervisor..." value="" color="#9AA0A6" />
+                {options.map((o) => (
+                  <Picker.Item key={o.value} label={o.label} value={o.value} />
+                ))}
+              </Picker>
+            </View>
+          )}
+
+          <View style={[styles.button, (!program || !supervisor) && styles.buttonDisabled]}>
             <Text style={styles.buttonText}>Continue</Text>
           </View>
         </View>
@@ -102,6 +165,10 @@ const styles = StyleSheet.create({
   },
   picker: {
     color: '#E8EEF2',
+  },
+  placeholderText: {
+    color: '#8FA0A8',
+    paddingHorizontal: 12,
   },
   button: {
     height: 48,
