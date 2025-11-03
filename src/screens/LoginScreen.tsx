@@ -81,9 +81,9 @@ export default function LoginScreen() {
             <Text style={styles.buttonText}>{loading ? 'Logging in...' : 'Log In'}</Text>
           </TouchableOpacity>
 
-          <View style={styles.forgot}>
+          {/* <View style={styles.forgot}>
             <Text style={styles.forgotText}>Forgot password?</Text>
-          </View>
+          </View> */}
         </View>
 
         <View style={styles.footer}>

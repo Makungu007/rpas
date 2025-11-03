@@ -7,14 +7,15 @@ import ProjectUploadScreen from '../screens/ProjectUploadScreen';
 import LecturerHomeScreen from '../screens/LecturerHomeScreen';
 import LecturerFeedbackScreen from '../screens/LecturerFeedbackScreen';
 import StudentFeedbackScreen from '../screens/StudentFeedbackScreen';
-import { Platform } from 'react-native';
+import { Platform, TouchableOpacity, Text } from 'react-native';
+import { logout } from '../storage/userStore';
 
 export type RootStackParamList = {
   Login: undefined;
   StudentHome: undefined;
   ProjectUpload: undefined;
   LecturerHome: undefined;
-  LecturerFeedback: undefined;
+  LecturerFeedback: { submissionId: string };
   StudentFeedback: undefined;
 };
 
@@ -34,9 +35,60 @@ export default function AppNavigator() {
         }}
       >
         <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Login' }} />
-        <Stack.Screen name="StudentHome" component={StudentHomeScreen} options={{ title: 'Student Home' }} />
-        <Stack.Screen name="ProjectUpload" component={ProjectUploadScreen} options={{ title: 'Project Upload' }} />
-        <Stack.Screen name="LecturerHome" component={LecturerHomeScreen} options={{ title: 'Lecturer Home' }} />
+        <Stack.Screen
+          name="StudentHome"
+          component={StudentHomeScreen}
+          options={({ navigation }) => ({
+            title: 'Student Home',
+            headerRight: () => (
+              <TouchableOpacity
+                onPress={async () => {
+                  await logout();
+                  navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+                }}
+                style={{ paddingHorizontal: 12, paddingVertical: 6 }}
+              >
+                <Text style={{ color: '#E8EEF2', fontWeight: '700' }}>Logout</Text>
+              </TouchableOpacity>
+            ),
+          })}
+        />
+        <Stack.Screen
+          name="ProjectUpload"
+          component={ProjectUploadScreen}
+          options={({ navigation }) => ({
+            title: 'Project Upload',
+            headerRight: () => (
+              <TouchableOpacity
+                onPress={async () => {
+                  await logout();
+                  navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+                }}
+                style={{ paddingHorizontal: 12, paddingVertical: 6 }}
+              >
+                <Text style={{ color: '#E8EEF2', fontWeight: '700' }}>Logout</Text>
+              </TouchableOpacity>
+            ),
+          })}
+        />
+        <Stack.Screen
+          name="LecturerHome"
+          component={LecturerHomeScreen}
+          options={({ navigation }) => ({
+            title: 'Lecturer Home',
+            headerRight: () => (
+              <TouchableOpacity
+                onPress={async () => {
+                  await logout();
+                  navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+                }}
+                style={{ paddingHorizontal: 12, paddingVertical: 6 }}
+              >
+                <Text style={{ color: '#E8EEF2', fontWeight: '700' }}>Logout</Text>
+              </TouchableOpacity>
+            ),
+          })}
+        />
         <Stack.Screen name="LecturerFeedback" component={LecturerFeedbackScreen} options={{ title: 'Lecturer Feedback' }} />
         <Stack.Screen name="StudentFeedback" component={StudentFeedbackScreen} options={{ title: 'Student Feedback' }} />
       </Stack.Navigator>

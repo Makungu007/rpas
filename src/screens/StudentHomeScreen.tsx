@@ -1,49 +1,60 @@
-import React, { useState } from 'react';
-import { Image, StyleSheet, Text, View, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Image, StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
+import { getCurrentUser, getSupervisorsByProgram, Program, setStudentProgramAndSupervisor, User } from '../storage/userStore';
 import { Picker } from '@react-native-picker/picker';
 
 export default function StudentHomeScreen() {
-  const [program, setProgram] = useState<string>('');
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [program, setProgram] = useState<Program | ''>('');
   const [supervisor, setSupervisor] = useState<string>('');
+  const [supervisors, setSupervisors] = useState<User[]>([]);
+  const [loadingSupers, setLoadingSupers] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const supervisorOptions: Record<string, { label: string; value: string }[]> = {
-    bsc_cs: [
-      { label: 'Dr. Chanda', value: 'chanda' },
-      { label: 'Ms. Mwila', value: 'mwila' },
-      { label: 'Prof. Phiri', value: 'phiri' },
-    ],
-    bba_ba: [
-      { label: 'Dr. Zulu', value: 'zulu' },
-      { label: 'Ms. Banda', value: 'banda' },
-    ],
-    beng_ee: [
-      { label: 'Eng. Mumba', value: 'mumba' },
-      { label: 'Dr. Tembo', value: 'tembo' },
-    ],
-    beng_me: [
-      { label: 'Eng. Phiri', value: 'e_phiri' },
-      { label: 'Mr. Lungu', value: 'lungu' },
-    ],
-    bsc_nursing: [
-      { label: 'Sr. Nkhoma', value: 'nkhoma' },
-      { label: 'Dr. Chileshe', value: 'chileshe' },
-    ],
-    ba_psych: [
-      { label: 'Dr. Kapasa', value: 'kapasa' },
-      { label: 'Ms. Nyambe', value: 'nyambe' },
-    ],
-    bed_edu: [
-      { label: 'Mr. Mulenga', value: 'mulenga' },
-      { label: 'Dr. Hamaundu', value: 'hamaundu' },
-    ],
-    ba_econ: [
-      { label: 'Dr. Musonda', value: 'musonda' },
-      { label: 'Prof. Zimba', value: 'zimba' },
-    ],
+  useEffect(() => {
+    getCurrentUser().then(setCurrentUser).catch(() => setCurrentUser(null));
+  }, []);
+
+  useEffect(() => {
+    if (!program) {
+      setSupervisors([]);
+      setSupervisor('');
+      return;
+    }
+    setLoadingSupers(true);
+    getSupervisorsByProgram(program)
+      .then((list) => setSupervisors(list))
+      .catch(() => setSupervisors([]))
+      .finally(() => setLoadingSupers(false));
+  }, [program]);
+
+  const onContinue = async () => {
+    if (!currentUser) {
+      Alert.alert('Not logged in', 'Please log in again.');
+      return;
+    }
+    if (!program || !supervisor) {
+      Alert.alert('Missing selection', 'Please select a program and a supervisor.');
+      return;
+    }
+    try {
+      setSubmitting(true);
+      await setStudentProgramAndSupervisor(currentUser.id, program, supervisor);
+      Alert.alert('Saved', 'Your program and supervisor have been saved.', [
+        { text: 'OK', onPress: () => navigation.navigate('ProjectUpload') },
+      ]);
+    } catch (e: any) {
+      Alert.alert('Error', e?.message ?? 'Failed to save selection');
+    } finally {
+      setSubmitting(false);
+    }
   };
-
-  const options = program ? supervisorOptions[program] ?? [] : [];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -60,22 +71,13 @@ export default function StudentHomeScreen() {
           <View style={styles.pickerWrapper}>
             <Picker
               selectedValue={program}
-              onValueChange={(val) => {
-                setProgram(val);
-                setSupervisor('');
-              }}
+              onValueChange={(val) => setProgram(val as Program | '')}
               dropdownIconColor="#E8EEF2"
               style={styles.picker}
             >
               <Picker.Item label="Select a program..." value="" color="#9AA0A6" />
-              <Picker.Item label="BSc Computer Science" value="bsc_cs" />
-              <Picker.Item label="BBA Business Administration" value="bba_ba" />
-              <Picker.Item label="BEng Electrical Engineering" value="beng_ee" />
-              <Picker.Item label="BEng Mechanical Engineering" value="beng_me" />
-              <Picker.Item label="BSc Nursing" value="bsc_nursing" />
-              <Picker.Item label="BA Psychology" value="ba_psych" />
-              <Picker.Item label="BEd Education" value="bed_edu" />
-              <Picker.Item label="BA Economics" value="ba_econ" />
+              <Picker.Item label="Computer Science" value="computer_science" />
+              <Picker.Item label="Information Systems" value="information_systems" />
             </Picker>
           </View>
 
@@ -87,22 +89,23 @@ export default function StudentHomeScreen() {
           ) : (
             <View style={styles.pickerWrapper}>
               <Picker
+                enabled={!loadingSupers}
                 selectedValue={supervisor}
-                onValueChange={setSupervisor}
+                onValueChange={(val) => setSupervisor(val)}
                 dropdownIconColor="#E8EEF2"
                 style={styles.picker}
               >
-                <Picker.Item label="Select a supervisor..." value="" color="#9AA0A6" />
-                {options.map((o) => (
-                  <Picker.Item key={o.value} label={o.label} value={o.value} />
+                <Picker.Item label={loadingSupers ? 'Loading supervisors...' : 'Select a supervisor...'} value="" color="#9AA0A6" />
+                {supervisors.map((sup) => (
+                  <Picker.Item key={sup.id} label={sup.name} value={sup.id} />
                 ))}
               </Picker>
             </View>
           )}
 
-          <View style={[styles.button, (!program || !supervisor) && styles.buttonDisabled]}>
-            <Text style={styles.buttonText}>Continue</Text>
-          </View>
+          <TouchableOpacity onPress={onContinue} disabled={!program || !supervisor || submitting} style={[styles.button, (!program || !supervisor || submitting) && styles.buttonDisabled]}>
+            <Text style={styles.buttonText}>{submitting ? 'Saving...' : 'Continue'}</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.footer}>
