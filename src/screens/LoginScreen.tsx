@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Image,
   KeyboardAvoidingView,
@@ -7,10 +7,41 @@ import {
   Text,
   TextInput,
   View,
+  TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { login } from '../storage/userStore';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { useNavigation } from '@react-navigation/native';
+import { RootStackParamList } from '../navigation/AppNavigator';
 
 export default function LoginScreen() {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const [id, setId] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const onLogin = async () => {
+    if (!id || !password) {
+      Alert.alert('Missing info', 'Please enter your ID and password');
+      return;
+    }
+    try {
+      setLoading(true);
+      const user = await login(id.trim(), password);
+      if (user.role === 'student') {
+        navigation.reset({ index: 0, routes: [{ name: 'StudentHome' }] });
+      } else {
+        navigation.reset({ index: 0, routes: [{ name: 'LecturerHome' }] });
+      }
+    } catch (e: any) {
+      Alert.alert('Login failed', e?.message ?? 'Invalid credentials');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
@@ -30,9 +61,10 @@ export default function LoginScreen() {
             placeholderTextColor="#9AA0A6"
             autoCapitalize="none"
             autoCorrect={false}
-            keyboardType="email-address"
+            keyboardType="default"
             style={styles.input}
-            textContentType="emailAddress"
+            value={id}
+            onChangeText={setId}
           />
 
           <Text style={[styles.label, { marginTop: 14 }]}>Password</Text>
@@ -41,12 +73,13 @@ export default function LoginScreen() {
             placeholderTextColor="#9AA0A6"
             style={styles.input}
             secureTextEntry={true}
-            textContentType="password"
+            value={password}
+            onChangeText={setPassword}
           />
 
-          <View style={styles.button}>
-            <Text style={styles.buttonText}>Log In</Text>
-          </View>
+          <TouchableOpacity disabled={loading} onPress={onLogin} style={[styles.button, loading && { opacity: 0.7 }] }>
+            <Text style={styles.buttonText}>{loading ? 'Logging in...' : 'Log In'}</Text>
+          </TouchableOpacity>
 
           <View style={styles.forgot}>
             <Text style={styles.forgotText}>Forgot password?</Text>
