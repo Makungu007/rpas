@@ -16,7 +16,7 @@ export type RootStackParamList = {
   ProjectUpload: undefined;
   LecturerHome: undefined;
   LecturerFeedback: { submissionId: string };
-  StudentFeedback: undefined;
+  StudentFeedback: { submissionId: string };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();

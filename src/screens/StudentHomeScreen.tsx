@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { getCurrentUser, getSupervisorsByProgram, Program, setStudentProgramAndSupervisor, User } from '../storage/userStore';
 import { Picker } from '@react-native-picker/picker';
+import { getSubmissionsForStudent, Submission } from '../storage/submissionStore';
 
 export default function StudentHomeScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -16,10 +17,22 @@ export default function StudentHomeScreen() {
   const [supervisors, setSupervisors] = useState<User[]>([]);
   const [loadingSupers, setLoadingSupers] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
 
   useEffect(() => {
     getCurrentUser().then(setCurrentUser).catch(() => setCurrentUser(null));
   }, []);
+
+  // Load submissions when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      if (currentUser) {
+        getSubmissionsForStudent(currentUser.id)
+          .then(setSubmissions)
+          .catch(() => setSubmissions([]));
+      }
+    }, [currentUser])
+  );
 
   useEffect(() => {
     if (!program) {
@@ -107,6 +120,47 @@ export default function StudentHomeScreen() {
             <Text style={styles.buttonText}>{submitting ? 'Saving...' : 'Continue'}</Text>
           </TouchableOpacity>
         </View>
+
+        {/* My Submissions Section */}
+        {submissions.length > 0 && (
+          <View style={[styles.card, { marginTop: 16 }]}>
+            <Text style={styles.sectionTitle}>My Submissions</Text>
+            {submissions.map((sub) => (
+              <TouchableOpacity
+                key={sub.id}
+                onPress={() => {
+                  if (sub.feedbackDecision) {
+                    navigation.navigate('StudentFeedback', { submissionId: sub.id });
+                  } else {
+                    Alert.alert('No feedback yet', 'Your supervisor has not provided feedback for this submission.');
+                  }
+                }}
+                style={styles.submissionRow}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.submissionTitle} numberOfLines={1}>
+                    {sub.description || 'No description'}
+                  </Text>
+                  <Text style={styles.submissionMeta}>
+                    {new Date(sub.createdAt).toLocaleDateString()} • {sub.files.length} file(s)
+                  </Text>
+                </View>
+                <View style={[
+                  styles.statusBadge,
+                  sub.status === 'approved' && styles.statusApproved,
+                  sub.status === 'changes_requested' && styles.statusChanges,
+                  sub.status === 'submitted' && styles.statusSubmitted,
+                ]}>
+                  <Text style={styles.statusText}>
+                    {sub.status === 'approved' ? 'Approved' :
+                     sub.status === 'changes_requested' ? 'Changes Requested' :
+                     'Pending'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>You can change this later in Settings.</Text>
@@ -199,5 +253,50 @@ const styles = StyleSheet.create({
     color: '#6E7F88',
     fontSize: 12,
     textAlign: 'center',
+  },
+  submissionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#122530',
+    borderWidth: 1,
+    borderColor: '#1E3A49',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  submissionTitle: {
+    color: '#E8EEF2',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  submissionMeta: {
+    color: '#8FA0A8',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  statusBadge: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  statusApproved: {
+    backgroundColor: '#0E2D1E',
+    borderColor: '#1C7A4E',
+  },
+  statusChanges: {
+    backgroundColor: '#3A2E09',
+    borderColor: '#7F6B1A',
+  },
+  statusSubmitted: {
+    backgroundColor: '#1A2D3A',
+    borderColor: '#2C5A7A',
+  },
+  statusText: {
+    color: '#E9EEF2',
+    fontWeight: '700',
+    fontSize: 11,
   },
 });

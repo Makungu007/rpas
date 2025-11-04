@@ -180,6 +180,35 @@ Implement sync mechanism:
 1. ✅ `src/storage/fileStorage.ts` - Created (new file)
 2. ✅ `src/screens/ProjectUploadScreen.tsx` - Updated
 3. ✅ `src/screens/LecturerFeedbackScreen.tsx` - Updated
+4. ✅ `src/screens/StudentFeedbackScreen.tsx` - Updated to display actual feedback
+5. ✅ `src/screens/StudentHomeScreen.tsx` - Updated to show submissions list
+6. ✅ `src/navigation/AppNavigator.tsx` - Updated StudentFeedback route params
+7. ✅ `package.json` - Removed react-native-file-viewer dependency
+
+## Recent Updates (November 4, 2025)
+
+### Fixed File Viewer Issue
+- **Problem**: `react-native-file-viewer` was returning null, causing crashes
+- **Solution**: Replaced with `expo-sharing` which works natively with Expo Go
+- Files now open through the system's share dialog instead of a dedicated viewer
+- Works on both Android and iOS without additional native configuration
+
+### Student Feedback Screen Enhancement
+- **Before**: Displayed hardcoded mock feedback data
+- **After**: Shows actual supervisor feedback from submissions
+- Students can now:
+  - View their submission details
+  - See supervisor comments and decisions
+  - Access submitted files
+  - Track submission timeline
+  - Navigate from StudentHomeScreen by tapping on submissions
+
+### Student Home Screen Enhancement
+- Added "My Submissions" section showing all student submissions
+- Color-coded status badges (Approved, Changes Requested, Pending)
+- Tap on submission to view feedback (if available)
+- Auto-refreshes when screen is focused
+- Shows helpful message if no feedback is available yet
 
 ---
 
