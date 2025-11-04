@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View, TouchableOpacity, Linking, Alert } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, View, TouchableOpacity, Linking, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { getCurrentUser } from '../storage/userStore';
 import { getSubmissionById, submitFeedback, Submission } from '../storage/submissionStore';
+import * as Sharing from 'expo-sharing';
+import { File } from 'expo-file-system';
 
 export default function LecturerFeedbackScreen() {
   const route = useRoute<RouteProp<RootStackParamList, 'LecturerFeedback'>>();
@@ -20,15 +22,38 @@ export default function LecturerFeedbackScreen() {
     getSubmissionById(submissionId).then(setSubmission).catch(() => setSubmission(null));
   }, [submissionId]);
 
-  const openFile = async (uri?: string | null) => {
+  const openFile = async (uri?: string | null, mimeType?: string | null) => {
+    console.log('Attempting to open file with URI:', uri); // Debugging log
+
     if (!uri) {
       Alert.alert('Missing file', 'No URI available for this file.');
       return;
     }
+
     try {
-      await Linking.openURL(uri);
+      // Check if file exists first
+      const file = new File(uri);
+      if (!file.exists) {
+        Alert.alert('File not found', 'This file may have been deleted or is no longer available.');
+        return;
+      }
+
+      // Check if sharing is available on this device
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert('Not supported', 'File sharing is not available on this device.');
+        return;
+      }
+
+      // Open the file using the system's sharing/viewer
+      await Sharing.shareAsync(uri, {
+        mimeType: mimeType || undefined,
+        dialogTitle: 'Open document',
+        UTI: mimeType || undefined,
+      });
     } catch (e) {
-      Alert.alert('Unable to open', 'Could not open this file on your device.');
+      console.error('Error opening file:', e); // Debugging log
+      Alert.alert('Unable to open', 'Could not open this file on your device. Error: ' + (e instanceof Error ? e.message : 'Unknown error'));
     }
   };
 
@@ -91,7 +116,7 @@ export default function LecturerFeedbackScreen() {
                       <Text style={styles.fileName}>{f.name}</Text>
                       <Text style={styles.fileMeta}>{[f.mimeType || 'Unknown', typeof f.size === 'number' ? `${Math.round(f.size / 1024)} KB` : 'Unknown size'].join(' • ')}</Text>
                     </View>
-                    <TouchableOpacity style={styles.openBtn} onPress={() => openFile(f.uri)}>
+                    <TouchableOpacity style={styles.openBtn} onPress={() => openFile(f.uri, f.mimeType)}>
                       <Text style={styles.openBtnText}>Open</Text>
                     </TouchableOpacity>
                   </View>

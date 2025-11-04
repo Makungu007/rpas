@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
 import { getCurrentUser, User } from '../storage/userStore';
 import { submitProject, SubmissionFile } from '../storage/submissionStore';
+import { saveFilePermanently } from '../storage/fileStorage';
 
 export default function ProjectUploadScreen() {
   const [description, setDescription] = useState('');
@@ -19,16 +20,29 @@ export default function ProjectUploadScreen() {
       });
 
       if ('assets' in result && Array.isArray(result.assets)) {
-        const next: SubmissionFile[] = result.assets.map((a) => ({
-          name: a.name ?? 'Unnamed file',
-          size: a.size ?? null,
-          mimeType: a.mimeType ?? null,
-          uri: (a as any).uri ?? null,
-        }));
-        setFiles((prev) => [...prev, ...next]);
+        // Save files permanently and get new URIs
+        const permanentFiles = await Promise.all(
+          result.assets.map(async (a) => {
+            const tempUri = (a as any).uri;
+            const fileName = a.name ?? 'Unnamed file';
+            
+            // Copy file to permanent storage
+            const permanentUri = await saveFilePermanently(tempUri, fileName);
+            
+            return {
+              name: fileName,
+              size: a.size ?? null,
+              mimeType: a.mimeType ?? null,
+              uri: permanentUri, // ✅ Now a permanent URI
+            };
+          })
+        );
+        
+        setFiles((prev) => [...prev, ...permanentFiles]);
       }
     } catch (e) {
-      // Silent fail (UI-only)
+      console.error('Error adding documents:', e);
+      Alert.alert('Error', 'Failed to add documents. Please try again.');
     }
   };
 
